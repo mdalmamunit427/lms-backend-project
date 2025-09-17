@@ -30,17 +30,22 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
     // 3️⃣ Apply coupon discount if provided
     if (couponCode) {
       const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+      
       const couponExpires = coupon?.expiresAt as Date;
 
       if (!coupon || couponExpires < new Date()) {
         return res.status(400).json({ message: "Invalid or expired coupon" });
       }
 
-      if (coupon.appliesTo && coupon.appliesTo.toString() !== courseId) {
+      if (coupon.appliesTo !== "all" && coupon.appliesTo.toString() !== courseId) {
         return res.status(400).json({ message: "Coupon not valid for this course" });
       }
 
       finalPrice -= (finalPrice * coupon.discountPercent) / 100;
+
+       // ✅ Increment usageCount (optional)
+      coupon.usageCount += 1;
+      await coupon.save();
     }
 
     // ✅ If course is free or 100% discounted
@@ -83,8 +88,6 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
       success_url: `${process.env.FRONTEND_URL}/enroll/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/enroll/cancel`,
     });
-
-
     // open the  session.url and do manual payment using cards
     console.log("Session id: ", session.id);
     console.log("Session url: ", session.url)
@@ -102,10 +105,17 @@ export const getUserEnrollments = async (req: Request, res: Response) => {
     const studentId = req.params.studentId;
 
     const enrollments = await Enrollment.find({ student: studentId })
-      .populate("course")
+      .populate({
+        path: "course",
+        select: "name description courseThumbnail coursePrice discount educator", 
+        // ✅ No courseContent or enrolledStudents to reduce payload
+      })
       .lean();
 
-    res.status(200).json(enrollments);
+    res.status(200).json({
+      success: true,
+      enrollments,
+    });
   } catch (error) {
     console.error("Error fetching enrollments:", error);
     res.status(500).json({ message: "Error fetching enrollments" });
