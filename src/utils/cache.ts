@@ -29,6 +29,6 @@ export async function invalidateCache(pattern: string): Promise<number> {
     cursor = nextCursor;
   } while (cursor !== "0");
 
-  console.log(`Cache invalidated: ${pattern}* → Deleted ${deletedCount} keys`);
+  // console.log(`Cache invalidated: ${pattern}* → Deleted ${deletedCount} keys`);
   return deletedCount;
 }

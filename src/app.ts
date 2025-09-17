@@ -22,12 +22,14 @@ import coursesRoutes from "./routes/courses.routes";
 import enrollmentRoutes from "./routes/enrollment.routes";
 import stripeWebhookRoutes from "./routes/stripeWebhook.routes";
 import couponRoutes from "./routes/coupon.routes";
+import ProgressRoutes from './routes/progress.routes';
 
 app.use("/api/v1/courses", coursesRoutes);
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/enrollment", enrollmentRoutes);
 app.use("/api/v1/stripe/webhook", stripeWebhookRoutes);
 app.use("/api/v1/coupon", couponRoutes);
+app.use("/api/v1/course-progress", ProgressRoutes)
 
 
 app.use(globalErrorHandler);
