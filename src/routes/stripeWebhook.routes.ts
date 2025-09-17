@@ -1,33 +1,37 @@
+// routes/stripeWebhook.route.ts
 import express from "express";
-import bodyParser from "body-parser";
-import stripe from "../utils/stripe";
 import { handleStripeWebhook } from "../controllers/stripeWebhook.controller";
-
+import Stripe from "stripe";
 
 const router = express.Router();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-// ✅ Stripe requires raw body
 router.post(
   "/",
-  bodyParser.raw({ type: "application/json" }),
+  express.raw({ type: "application/json" }),
   async (req, res) => {
-    console.log("stripe web hooks")
-    const sig = req.headers["stripe-signature"];
-    if (!sig) return res.status(400).send("Missing Stripe signature");
-
     try {
-      const event = stripe.webhooks.constructEvent(
-        req.body, // ✅ still a Buffer
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET!
-      );
+      let event: Stripe.Event;
+
+      if (process.env.NODE_ENV === "production") {
+        // ✅ Verify signature in production
+        const sig = req.headers["stripe-signature"] as string;
+        event = stripe.webhooks.constructEvent(
+          req.body,
+          sig,
+          process.env.STRIPE_WEBHOOK_SECRET!
+        );
+      } else {
+        // ⚠️ Skip verification for local / manual Postman testing
+        event = req.body as Stripe.Event;
+      }
 
       await handleStripeWebhook(event);
 
-      return res.json({ received: true });
-    } catch (err: any) {
-      console.error("❌ Stripe webhook error:", err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Webhook error:", error);
+      res.status(400).send(`Webhook Error: ${(error as Error).message}`);
     }
   }
 );
