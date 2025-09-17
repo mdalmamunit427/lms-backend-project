@@ -97,8 +97,6 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
 };
 
 
-
-
 export const getUserEnrollments = async (req: Request, res: Response) => {
   try {
     const studentId = req.params.studentId;

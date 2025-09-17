@@ -4,10 +4,14 @@ import Enrollment from "../models/enrollment.model";
 import Course from "../models/courses.model";
 import { invalidateCache } from "../utils/cache";
 
+
 export async function handleStripeWebhook(event: Stripe.Event) {
+  console.log("🔥 Stripe event received:", event.type);
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
+
       const courseId = session.metadata?.courseId;
       const studentId = session.metadata?.studentId;
       const amountPaid = (session.amount_total ?? 0) / 100;
@@ -17,27 +21,42 @@ export async function handleStripeWebhook(event: Stripe.Event) {
         return;
       }
 
-      // ✅ Create or update enrollment
-      await Enrollment.findOneAndUpdate(
-        { student: studentId, course: courseId },
-        { paymentStatus: "paid", amountPaid },
-        { upsert: true, new: true }
-      );
+      try {
+        // ✅ Create or update enrollment (idempotent)
+        const enrollment = await Enrollment.findOneAndUpdate(
+          { student: studentId, course: courseId },
+          {
+            $set: {
+              student: studentId,
+              course: courseId,
+              paymentStatus: "paid",
+              amountPaid,
+              stripeSessionId: session.id, // optional: store session ID for reference
+            },
+          },
+          { upsert: true, new: true }
+        );
 
-      // ✅ Optionally update enrolled students list in Course
-      await Course.findByIdAndUpdate(courseId, {
-        $addToSet: { enrolledStudents: studentId },
-      });
+        // ✅ Add student to course enrolled list
+        await Course.findByIdAndUpdate(courseId, {
+          $addToSet: { enrolledStudents: studentId },
+        });
 
-      // ✅ Invalidate cache
-      await invalidateCache("courses");
-      await invalidateCache(`course:${courseId}`);
+        // ✅ Invalidate caches
+        await invalidateCache("courses");
+        await invalidateCache(`course:${courseId}`);
 
-      console.log(`✅ Enrollment successful for course ${courseId}`);
+        console.log(`✅ Enrollment successful for student ${studentId} in course ${courseId}`);
+        console.log(`💰 Amount Paid: $${amountPaid}`);
+        console.log(`🆔 Stripe Session: ${session.id}`);
+      } catch (err: any) {
+        console.error("❌ Failed to process checkout.session.completed:", err.message);
+      }
+
       break;
     }
 
     default:
-      console.log(`Unhandled event type: ${event.type}`);
+      console.log(`⚠️ Unhandled event type: ${event.type}`);
   }
 }
