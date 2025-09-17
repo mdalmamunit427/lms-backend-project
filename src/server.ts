@@ -4,7 +4,7 @@ dotenv.config();
 
 import app from './app';
 import config from './config';
-import dbConnect from './utils/db';
+import mongoose from 'mongoose';
 
 cloudinary.config({
   cloud_name: config.cloudinary_cloud_name,
@@ -12,10 +12,15 @@ cloudinary.config({
   api_secret: config.cloudinary_api_secret,
 });
 
+async function main() {
+  await mongoose.connect(config.database_url as string);
+  
+  app.listen(config.port, () => {
+      console.log(`Example app listening on port ${config.port}`)
+    })
 
-app.listen(config.port, () => {
-  console.log(`Server running on port ${config.port}`);
-  dbConnect();
-});
+}
 
+main().then(() => console.log("Mongodb is connected successfully!"))
+.catch(error => console.log(error));
 

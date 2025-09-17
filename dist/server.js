@@ -8,14 +8,18 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const app_1 = __importDefault(require("./app"));
 const config_1 = __importDefault(require("./config"));
-const db_1 = __importDefault(require("./utils/db"));
+const mongoose_1 = __importDefault(require("mongoose"));
 cloudinary_1.v2.config({
     cloud_name: config_1.default.cloudinary_cloud_name,
     api_key: config_1.default.cloudinary_api_key,
     api_secret: config_1.default.cloudinary_api_secret,
 });
-app_1.default.listen(config_1.default.port, () => {
-    console.log(`Server running on port ${config_1.default.port}`);
-    (0, db_1.default)();
-});
+async function main() {
+    await mongoose_1.default.connect(config_1.default.database_url);
+    app_1.default.listen(config_1.default.port, () => {
+        console.log(`Example app listening on port ${config_1.default.port}`);
+    });
+}
+main().then(() => console.log("Mongodb is connected successfully!"))
+    .catch(error => console.log(error));
 //# sourceMappingURL=server.js.map

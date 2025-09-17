@@ -5,26 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const config_1 = __importDefault(require("../config"));
-const MONGODB_URI = config_1.default.database_url;
-if (!MONGODB_URI) {
-    throw new Error("Please define the MONGODB_URI in your config");
-}
-// Use a global variable to cache the connection
-let cached = global.mongoose;
-if (!cached) {
-    cached = global.mongoose = { conn: null, promise: null };
-}
 const dbConnect = async () => {
-    if (cached.conn) {
-        return cached.conn; // return cached connection
+    try {
+        await mongoose_1.default.connect(config_1.default.database_url);
+        console.log(`Database connected successfully`);
     }
-    if (!cached.promise) {
-        cached.promise = mongoose_1.default.connect(MONGODB_URI).then((mongoose) => {
-            return mongoose;
-        });
+    catch (error) {
+        console.log(error);
     }
-    cached.conn = await cached.promise;
-    return cached.conn;
 };
 exports.default = dbConnect;
 //# sourceMappingURL=db.js.map
