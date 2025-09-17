@@ -1,0 +1,1 @@
+{"version":3,"file":"routeParams.d.ts","sourceRoot":"","sources":["../../src/@types/routeParams.ts"],"names":[],"mappings":"AAAA,MAAM,WAAW,aAAa;IAC1B,EAAE,CAAC,EAAE,MAAM,CAAC;CACb;AAED,MAAM,WAAW,cAAe,SAAQ,aAAa;IACnD,SAAS,CAAC,EAAE,MAAM,CAAC;CACpB;AAED,MAAM,WAAW,cAAe,SAAQ,cAAc;IACpD,SAAS,CAAC,EAAE,MAAM,CAAC;CACpB"}
