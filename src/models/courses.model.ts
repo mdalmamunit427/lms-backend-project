@@ -1,95 +1,57 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
-
-
-export interface ILecture {
-  lectureId: string; // Custom ID
-  lectureTitle: string;
-  lectureDuration: number; // in minutes or seconds
-  lectureUrl: string;
-  isPreviewFree: boolean;
-  lectureOrder: number; // Order within chapter
-}
-
-export interface IChapter {
-  chapterId: string; // Custom ID
-  chapterOrder: number; // Order of chapter
-  chapterTitle: string;
-  chapterContent: ILecture[]; // Array of lectures
-}
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface ICourse extends Document {
-  _id: Types.ObjectId;
-  name: string;
+  title: string;
   description: string;
-  courseThumbnail: {
-    public_id: string;
+  instructor: mongoose.Schema.Types.ObjectId;
+  category: string;
+  price: number;
+  discount: number;
+  stacks: string[];
+  thumbnail: {
+    public_id: string | null;
     url: string;
   };
-  coursePrice: number;
-  isPublished: boolean;
-  discount: number;
-  courseContent: IChapter[];
-  educator: Types.ObjectId;
-  courseRatings: {
-    userId: Types.ObjectId;
-    rating: number;
-  }[];
-  enrolledStudents: Types.ObjectId[];
+  enrollmentCount: number;
+  averageRating: number;
+  status: "draft" | "published" | "archived";
 }
 
-
-const lectureSchema = new Schema<ILecture>(
+const CourseSchema: Schema = new Schema(
   {
-    lectureId: { type: String, required: true },
-    lectureTitle: { type: String, required: true },
-    lectureDuration: { type: Number, required: true },
-    lectureUrl: { type: String, required: true },
-    isPreviewFree: { type: Boolean, required: true },
-    lectureOrder: { type: Number, required: true },
-  },
-  { _id: false }
-);
-
-const chapterSchema = new Schema<IChapter>(
-  {
-    chapterId: { type: String, required: true },
-    chapterOrder: { type: Number, required: true },
-    chapterTitle: { type: String, required: true },
-    chapterContent: { type: [lectureSchema], default: [] },
-  },
-  { _id: false }
-);
-
-const courseSchema = new Schema<ICourse>(
-  {
-    name: { type: String, required: true },
+    title: { type: String, required: true },
     description: { type: String, required: true },
-    courseThumbnail: {
-      public_id: { type: String },
-      url: { type: String }
+    instructor: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    category: { type: String, required: true },
+    price: { type: Number, required: true },
+    discount: { type: Number, default:0, min: 0, max: 100 },
+    stacks: {
+      type: [String],
+      default: []
     },
-    coursePrice: { type: Number, required: true },
-    isPublished: { type: Boolean, default: true },
-    discount: { type: Number, required: true, min: 0, max: 100 },
-    courseContent: { type: [chapterSchema], default: [] },
-    educator: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    courseRatings: {
-      type: [
-        {
-          userId: { type: Schema.Types.ObjectId, ref: "User" },
-          rating: { type: Number, min: 1, max: 5 },
-        },
-      ],
-      default: [],
+    thumbnail: {
+      public_id: {
+        type: String,
+        default: null,
+      },
+      url: {
+        type: String,
+        default: "https://res.cloudinary.com/dj8fpb6tq/image/upload/v1758530649/qllwshtuqe3njr8pzim6.png",
+      },
     },
-    enrolledStudents: {
-      type: [{ type: Schema.Types.ObjectId, ref: "User" }],
-      default: [],
+    enrollmentCount: { type: Number, default: 0 },
+    averageRating: { type: Number, default: 0 },
+    status: {
+      type: String,
+      enum: ["draft", "published", "archived"],
+      default: "draft",
     },
   },
-  { timestamps: true, minimize: false }
+  { timestamps: true }
 );
 
-const Course = mongoose.model<ICourse>("Course", courseSchema);
+CourseSchema.index({ title: "text", description: "text" });
+CourseSchema.index({ instructor: 1 });
 
+const Course = mongoose.model<ICourse>("Course", CourseSchema);
 export default Course;

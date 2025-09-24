@@ -1,64 +1,68 @@
-import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
-export interface IUser extends mongoose.Document {
-  _id: string;
+export interface IUser extends Document {
+  _id: Types.ObjectId;
   name: string;
   email: string;
-  password: string;
+  password?: string;
   isVerified: boolean;
-  role: "user" | "admin";
+  role: "user" | "instructor" | "admin";
   avatar?: {
     public_id: string;
     url: string;
   };
-  courses?: string[];
-  refreshToken?: string;
+  username: string;
+  refreshToken?: string | null;
+  refreshTokenExpiry?: Date | null;
+  activationCode?: string | null;
+  activationCodeExpiry?: Date | null;
+  resetPasswordOtp?: string | null;
+  resetPasswordOtpExpiry?: Date | null;
 }
 
 const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
-
-const userSchema = new mongoose.Schema<IUser>({
-  name: String,
-  email: { 
-    type: String, 
-    unique: true, 
-    validate: {
-      validator: function(v: string) {
-        return emailRegex.test(v);
+const UserSchema: Schema = new Schema(
+  {
+    name: { type: String, required: true },
+    email: {
+      type: String,
+      unique: true,
+      validate: {
+        validator: function (v: string) {
+          return emailRegex.test(v);
+        },
+        message: (props: any) => `${props.value} is not a valid email!`,
       },
-      message: props => `${props.value} is not a valid email!`
-    }
+    },
+    password: { type: String, required: false },
+    isVerified: { type: Boolean, default: false },
+    role: {
+      type: String,
+      enum: ["user", "instructor", "admin"],
+      default: "user",
+    },
+    avatar: {
+      public_id: {
+        type: String,
+        default: null,
+      },
+      url: {
+        type: String,
+        default: "https://res.cloudinary.com/dj8fpb6tq/image/upload/v1758530649/qllwshtuqe3njr8pzim6.png",
+      },
+    },
+    username: String,
+    refreshToken: { type: String, default: null },
+    refreshTokenExpiry: { type: Date, default: null },
+    activationCode: { type: String, default: null, select: false },
+    activationCodeExpiry: { type: Date, default: null, select: false },
+    resetPasswordOtp: { type: String, default: null, select: false },
+    resetPasswordOtpExpiry: { type: Date, default: null, select: false },
   },
-  password: String,
-  isVerified: { type: Boolean, default: false },
-  role: {
-    type: String,
-    enum: ["user", "admin"],
-    default: "user",
-  },
-  avatar: {
-    public_id: String,
-    url: String,
-  },
-  courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }],
-  refreshToken: String,
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  
-  // Check if password is already hashed (bcrypt hashes start with $2b$)
-  if (this.password.startsWith('$2b$')) return next();
-  
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
+UserSchema.index({ role: 1 });
 
-userSchema.methods.comparePassword = async function (password: string) {
-  return await bcrypt.compare(password, this.password);
-};
-
-export const User = mongoose.model<IUser>("User", userSchema);
-
-
+const User = mongoose.model<IUser>("User", UserSchema);
+export default User;
