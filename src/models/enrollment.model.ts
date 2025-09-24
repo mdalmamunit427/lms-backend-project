@@ -1,30 +1,23 @@
-import mongoose, { Schema, Document } from 'mongoose';
+// models/enrollment.model.ts
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IEnrollment extends Document {
-  student: mongoose.Schema.Types.ObjectId; // Corrected: Use 'student'
-  course: mongoose.Schema.Types.ObjectId;
-  coupon?: mongoose.Schema.Types.ObjectId;
-  enrollmentDate: Date;
+  student: mongoose.Types.ObjectId;
+  course: mongoose.Types.ObjectId;
+  paymentStatus: "pending" | "paid";
   amountPaid: number;
-  paymentStatus: 'paid' | 'free';
-  stripeSessionId?: string;
+  createdAt: Date;
 }
 
-const EnrollmentSchema: Schema = new Schema(
+const enrollmentSchema = new Schema<IEnrollment>(
   {
-    student: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    course: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
-    coupon: { type: Schema.Types.ObjectId, ref: 'Coupon' },
-    enrollmentDate: { type: Date, default: Date.now },
-    amountPaid: { type: Number, required: true },
-    paymentStatus: { type: String, enum: ['paid', 'free'], required: true },
-    stripeSessionId: { type: String },
+    student: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    course: { type: Schema.Types.ObjectId, ref: "Course", required: true },
+    paymentStatus: { type: String, enum: ["pending", "paid"], default: "pending" },
+    amountPaid: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
 
-// Corrected: The index is now on 'student' to match the schema
-EnrollmentSchema.index({ student: 1, course: 1 }, { unique: true });
-
-const Enrollment = mongoose.model<IEnrollment>('Enrollment', EnrollmentSchema);
+const Enrollment = mongoose.model<IEnrollment>("Enrollment", enrollmentSchema);
 export default Enrollment;
